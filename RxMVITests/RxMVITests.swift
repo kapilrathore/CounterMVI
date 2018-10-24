@@ -27,7 +27,7 @@ class RxMVITests: XCTestCase {
   private lazy var initialState = CounterState.inital(counter: 0)
 
   private var disposeBag: DisposeBag!
-  private var observer: TestableObserver<CounterState>!
+//  private var observer: TestableObserver<CounterState>!
 
   private var lifecycle: PublishRelay<MviLifecycle>!
   private var states: PublishRelay<CounterState>!
@@ -40,7 +40,7 @@ class RxMVITests: XCTestCase {
   func testEmitsCounter_whenViewCreated() {
     // Setup
     disposeBag = DisposeBag()
-    observer = TestScheduler(initialClock: 0)
+    let observer = TestScheduler(initialClock: 0)
       .createObserver(CounterState.self)
 
     lifecycle = PublishRelay()
@@ -65,6 +65,41 @@ class RxMVITests: XCTestCase {
     // Assert
     let initial = CounterState(count: 0)
     let expected = [next(0, initial)]
+    XCTAssertEqual(observer.events, expected)
+  }
+
+  func testEmitsCounter_whenIncrementClickedOnce() {
+
+    // Setup
+    disposeBag = DisposeBag()
+    let observer = TestScheduler(initialClock: 0)
+      .createObserver(CounterState.self)
+
+    lifecycle = PublishRelay()
+    states = PublishRelay()
+
+    incrementClicks = PublishRelay()
+    decrementClicks = PublishRelay()
+
+    intentions = CounterIntentions(
+      incrementClicks.asObservable(),
+      decrementClicks.asObservable()
+    )
+
+    // Act
+    CounterModel
+      .bind(lifecycle.asObservable(), states.asObservable(), intentions)
+      .do(onNext: { (state) in
+        self.states.accept(state)
+      }, onError: nil, onCompleted: nil, onSubscribe: nil, onSubscribed: nil, onDispose: nil)
+      .subscribe(observer)
+      .disposed(by: disposeBag)
+
+    lifecycle.accept(.created)
+    incrementClicks.accept(())
+
+    // Assert
+    let expected = [next(0, CounterState(count: 0)), next(0, CounterState(count: 1))]
     XCTAssertEqual(observer.events, expected)
   }
 }
