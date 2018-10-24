@@ -91,7 +91,7 @@ class RxMVITests: XCTestCase {
       .bind(lifecycle.asObservable(), states.asObservable(), intentions)
       .do(onNext: { (state) in
         self.states.accept(state)
-      }, onError: nil, onCompleted: nil, onSubscribe: nil, onSubscribed: nil, onDispose: nil)
+      })
       .subscribe(observer)
       .disposed(by: disposeBag)
 
@@ -101,5 +101,39 @@ class RxMVITests: XCTestCase {
     // Assert
     let expected = [next(0, CounterState(count: 0)), next(0, CounterState(count: 1))]
     XCTAssertEqual(observer.events, expected)
+  }
+
+  func testEmitsCounterState_whenDecrementClickedOnce() {
+    // Setup
+    disposeBag = DisposeBag()
+    let observer = TestScheduler(initialClock: 0)
+      .createObserver(CounterState.self)
+
+    lifecycle = PublishRelay()
+    states = PublishRelay()
+
+    incrementClicks = PublishRelay()
+    decrementClicks = PublishRelay()
+
+    intentions = CounterIntentions(
+      incrementClicks.asObservable(),
+      decrementClicks.asObservable()
+    )
+
+    // Act
+    CounterModel
+      .bind(lifecycle.asObservable(), states.asObservable(), intentions)
+      .do(onNext: { (state) in
+        self.states.accept(state)
+      })
+      .subscribe(observer)
+      .disposed(by: disposeBag)
+
+    lifecycle.accept(.created)
+    decrementClicks.accept(())
+
+    // Assert
+    let expect = [next(0, CounterState(count: 0)), next(0, CounterState(count: -1))]
+    XCTAssertEqual(observer.events, expect)
   }
 }
