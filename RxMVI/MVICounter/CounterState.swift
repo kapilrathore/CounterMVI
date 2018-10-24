@@ -8,8 +8,12 @@
 
 import Foundation
 
-struct CounterState {
+struct CounterState: Equatable {
   let count: Int
+
+  static func == (lhs: CounterState, rhs: CounterState) -> Bool {
+    return lhs.count == rhs.count
+  }
 }
 
 // State Reducer
@@ -31,3 +35,4 @@ extension CounterState {
     return CounterState(count: count)
   }
 }
+
