@@ -33,7 +33,19 @@ class ViewController: UIViewController {
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
 
-    
+    // Bind the model and observe it
+    _ = bindModel(states: statesRelay.asObservable(), lifecycle: lifecycleRelay.asObservable())
+      .observeOn(MainScheduler.asyncInstance)
+      .subscribe { (event) in
+
+        if let state = event.element {
+          self.statesRelay.accept(state)
+          self.emitted(state: state)
+        }
+    }
+
+    // to set the initial count == 0
+    lifecycleRelay.accept(.created)
   }
 
   func bindModel(
